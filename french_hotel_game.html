@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Rôle : Hôtel Rastons</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a; /* Deep blue */
+            --secondary: #3b82f6; /* Lighter blue */
+            --accent: #f59e0b; /* Gold/Amber */
+            --bg: #f3f4f6;
+            --chat-bg: #ffffff;
+            --emp-msg: #e5e7eb;
+            --user-msg: #3b82f6;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #1f2937;
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 500px;
+            height: 90vh;
+            max-height: 850px;
+            background-color: var(--chat-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .score-badge {
+            background-color: var(--accent);
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Mission Card */
+        #mission-panel {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            padding: 15px 20px;
+            border-bottom: 2px solid #bfdbfe;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .mission-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--secondary);
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .mission-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Chat Area */
+        #chat-history {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: #f9fafb;
+        }
+
+        .msg-wrapper {
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
+            animation: popIn 0.3s ease-out;
+        }
+
+        .msg-wrapper.employee {
+            align-self: flex-start;
+        }
+
+        .msg-wrapper.user {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .msg-wrapper.system {
+            align-self: center;
+            max-width: 95%;
+            align-items: center;
+        }
+
+        .msg-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .employee .msg-bubble {
+            background-color: var(--emp-msg);
+            color: #1f2937;
+            border-bottom-left-radius: 4px;
+        }
+
+        .user .msg-bubble {
+            background-color: var(--user-msg);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .system .msg-bubble {
+            background-color: #fef3c7;
+            color: #92400e;
+            font-size: 0.85rem;
+            text-align: center;
+            border-radius: 12px;
+            border: 1px solid #fde68a;
+        }
+        
+        .system .msg-bubble.success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border-color: #a7f3d0;
+        }
+        
+        .system .msg-bubble.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border-color: #fecaca;
+        }
+
+        .msg-label {
+            font-size: 0.7rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+            margin-left: 4px;
+            margin-right: 4px;
+        }
+
+        /* Input Area */
+        #input-area {
+            display: flex;
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid #e5e7eb;
+            gap: 10px;
+        }
+
+        #user-input {
+            flex-grow: 1;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        #user-input:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        #send-btn {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+
+        #send-btn:hover {
+            background-color: #2563eb;
+        }
+        
+        #send-btn:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #send-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transform: translateX(1px); /* optical alignment */
+        }
+
+        /* Start / End Screens */
+        .center-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            text-align: center;
+            height: 100%;
+            background: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+        }
+
+        .icon-large {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+        }
+
+        p {
+            color: #4b5563;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .result-box {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            width: 100%;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .result-box h3 {
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        /* Animations */
+        @keyframes popIn {
+            0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes slideDown {
+            0% { opacity: 0; transform: translateY(-10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        
+        <!-- START SCREEN -->
+        <div id="start-screen" class="screen active center-content">
+            <div class="icon-large">🛎️</div>
+            <h2>Hôtel Rastons</h2>
+            <p><strong>Game Rule:</strong> You are the customer.<br><br>Read the mission card and type your response in French. You get 1 point each time you use the correct vocabulary.</p>
+            <button class="btn-primary" onclick="startGame()">Commencer le jeu (Start)</button>
+        </div>
+
+        <!-- GAME SCREEN -->
+        <div id="game-screen" class="screen">
+            <header>
+                <h1>Hôtel Rastons</h1>
+                <div class="score-badge">⭐ Score: <span id="score-counter">0</span></div>
+            </header>
+            
+            <div id="mission-panel">
+                <div class="mission-label" id="mission-label">Carte 1</div>
+                <div class="mission-text" id="mission-text">Réservez une chambre pour deux personnes.</div>
+            </div>
+
+            <div id="chat-history">
+                <!-- Messages will appear here -->
+            </div>
+
+            <div id="input-area">
+                <input type="text" id="user-input" placeholder="Tapez votre réponse en français..." autocomplete="off">
+                <button id="send-btn" onclick="submitAnswer()">
+                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- END SCREEN -->
+        <div id="end-screen" class="screen center-content">
+            <div class="icon-large" id="end-icon">🏆</div>
+            <h2>Fin du jeu !</h2>
+            
+            <div class="result-box">
+                <h3 id="final-score-text">Score : 0/5</h3>
+                <p id="feedback-text" style="margin-bottom: 0;">Niveau estimé : ...</p>
+            </div>
+            
+            <button class="btn-primary" onclick="resetGame()">Rejouer (Play Again)</button>
+        </div>
+
+    </div>
+
+    <script>
+        const missions = [
+            {
+                label: "Carte 1",
+                card: "Réservez une chambre pour deux personnes.",
+                employee: "Bonjour, Hôtel Rastons, je vous écoute.",
+                keywords: ["réserver", "chambre", "deux", "personnes"],
+                example: "Bonjour, je voudrais réserver une chambre double pour deux personnes."
+            },
+            {
+                label: "Carte 2",
+                card: "Demandez si le petit-déjeuner est compris.",
+                employee: "Très bien. Préférez-vous une chambre standard ou avec vue sur la mer ?",
+                keywords: ["petit", "déjeuner", "compris", "inclus"],
+                example: "Une chambre avec vue sur la mer. Est-ce que le petit-déjeuner est compris ?"
+            },
+            {
+                label: "Carte 3",
+                card: "Demandez les horaires d’arrivée et de départ.",
+                employee: "Oui, le petit-déjeuner buffet est inclus dans le prix.",
+                keywords: ["horaires", "arrivée", "départ", "heure", "quand"],
+                example: "Super. Quels sont les horaires d’arrivée et de départ ?"
+            },
+            {
+                label: "Carte 4",
+                card: "Demandez s’il y a un parking gratuit.",
+                employee: "L'arrivée se fait à partir de 14h et le départ avant 11h.",
+                keywords: ["parking", "gratuit", "voiture"],
+                example: "Est-ce que vous avez un parking privé et est-il gratuit ?"
+            },
+            {
+                label: "Carte 5",
+                card: "Demandez si vous pouvez modifier la réservation.",
+                employee: "Oui, nous avons un parking privé gratuit pour nos clients.",
+                keywords: ["modifier", "réservation", "changer", "possible", "imprévu"],
+                example: "Est-il possible de modifier la réservation après confirmation ?"
+            }
+        ];
+
+        let currentMissionIndex = 0;
+        let score = 0;
+        
+        // DOM Elements
+        const screens = {
+            start: document.getElementById('start-screen'),
+            game: document.getElementById('game-screen'),
+            end: document.getElementById('end-screen')
+        };
+        const missionLabel = document.getElementById('mission-label');
+        const missionText = document.getElementById('mission-text');
+        const chatHistory = document.getElementById('chat-history');
+        const userInput = document.getElementById('user-input');
+        const scoreCounter = document.getElementById('score-counter');
+        const sendBtn = document.getElementById('send-btn');
+
+        // Handle Enter key for input
+        userInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                submitAnswer();
+            }
+        });
+
+        function switchScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenName].classList.add('active');
+        }
+
+        function startGame() {
+            score = 0;
+            currentMissionIndex = 0;
+            scoreCounter.innerText = score;
+            chatHistory.innerHTML = '';
+            userInput.value = '';
+            
+            switchScreen('game');
+            loadMission();
+        }
+
+        function loadMission() {
+            if (currentMissionIndex >= missions.length) {
+                endGame();
+                return;
+            }
+
+            const mission = missions[currentMissionIndex];
+            
+            // Update Mission Card
+            missionLabel.innerText = mission.label;
+            missionText.innerText = mission.card;
+            
+            // Add slight delay before employee speaks to feel natural
+            setTimeout(() => {
+                addMessage('employee', 'Employé', mission.employee);
+                userInput.focus();
+                sendBtn.disabled = false;
+                userInput.disabled = false;
+            }, 600);
+        }
+
+        function addMessage(type, senderName, text, statusClass = "") {
+            const msgWrapper = document.createElement('div');
+            msgWrapper.className = `msg-wrapper ${type}`;
+            
+            if (type !== 'system') {
+                const label = document.createElement('div');
+                label.className = 'msg-label';
+                label.innerText = senderName;
+                msgWrapper.appendChild(label);
+            }
+
+            const bubble = document.createElement('div');
+            bubble.className = `msg-bubble ${statusClass}`;
+            bubble.innerText = text;
+            
+            msgWrapper.appendChild(bubble);
+            chatHistory.appendChild(msgWrapper);
+            
+            // Scroll to bottom
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function removeDiacritics(str) {
+            return str.normalize("NFD").replace(/[̀-ͯ]/g, "");
+        }
+
+        function submitAnswer() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // Disable input while processing
+            sendBtn.disabled = true;
+            userInput.disabled = true;
+
+            // Show user message
+            addMessage('user', 'Vous (Client)', text);
+            userInput.value = '';
+
+            const mission = missions[currentMissionIndex];
+            
+            // Normalize text for validation (lowercase, remove punctuation and accents)
+            const normalizedInput = removeDiacritics(text.toLowerCase()).replace(/[.,!?']/g, " ");
+            const inputWords = normalizedInput.split(/\s+/);
+            
+            // Validation: Count how many target keywords were used
+            let matchCount = 0;
+            mission.keywords.forEach(keyword => {
+                const normalizedKeyword = removeDiacritics(keyword.toLowerCase());
+                if (inputWords.some(w => w.includes(normalizedKeyword) || normalizedKeyword.includes(w) && w.length > 3)) {
+                    matchCount++;
+                }
+            });
+
+            setTimeout(() => {
+                // If they matched at least 2 keywords, it's a success
+                if (matchCount >= 2) {
+                    score++;
+                    scoreCounter.innerText = score;
+                    addMessage('system', '', '✅ Bravo ! Vous avez utilisé le bon vocabulaire (+1 point).', 'success');
+                } else {
+                    addMessage('system', '', `❌ Presque ! Mots-clés attendus : ${mission.keywords.join(', ')}.
+
+💡 Exemple : ${mission.example}`, 'error');
+                }
+
+                currentMissionIndex++;
+                
+                // Add delay before loading next mission
+                setTimeout(loadMission, 2500);
+
+            }, 800);
+        }
+
+        function endGame() {
+            switchScreen('end');
+            document.getElementById('final-score-text').innerText = `Score Final : ${score} / ${missions.length}`;
+            
+            const feedbackText = document.getElementById('feedback-text');
+            const endIcon = document.getElementById('end-icon');
+            
+            if (score === missions.length) {
+                endIcon.innerText = "🌟";
+                feedbackText.innerText = "Niveau estimé : C1/C2
+Excellent travail ! Vous parlez français très naturellement. Vous êtes prêt pour le TCF !";
+            } else if (score >= missions.length / 2) {
+                endIcon.innerText = "👍";
+                feedbackText.innerText = "Niveau estimé : B1/B2
+Très bien ! Vous vous débrouillez bien dans des situations réelles. Continuez à vous entraîner pour viser la perfection.";
+            } else {
+                endIcon.innerText = "📚";
+                feedbackText.innerText = "Niveau estimé : A1/A2
+C'est un bon début ! Relisez bien le dialogue de référence pour mémoriser les phrases clés.";
+            }
+        }
+
+        function resetGame() {
+            startGame();
+        }
+    </script>
+</body>
+</html>
